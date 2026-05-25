@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#541388">
+  <meta name="description" content="Kiloss — Treinos, progresso e hábitos">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Kiloss">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="logo-kiloss.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <title>Kiloss</title>
+</head>
+<body>
+
+  <div class="offline-banner">Sem conexão</div>
+
+  <header class="app-header">
+    <img src="logo-kiloss.svg" alt="Kiloss" height="28">
+  </header>
+
+  <main class="app-main container"></main>
+
+  <nav class="app-nav" role="navigation" aria-label="Navegação principal">
+    <button class="nav-item" data-view="treinos" aria-label="Treinos" title="Treinos">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <rect x="2" y="10" width="3" height="4" rx="1"/>
+        <rect x="19" y="10" width="3" height="4" rx="1"/>
+        <rect x="5" y="8" width="3" height="8" rx="1"/>
+        <rect x="16" y="8" width="3" height="8" rx="1"/>
+        <rect x="8" y="11" width="8" height="2" rx="1"/>
+      </svg>
+    </button>
+    <button class="nav-item" data-view="progresso" aria-label="Progresso" title="Progresso">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+        <polyline points="16 7 22 7 22 13"/>
+      </svg>
+    </button>
+    <button class="nav-item" data-view="hidratacao" aria-label="Água" title="Água">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z"/>
+      </svg>
+    </button>
+    <button class="nav-item" data-view="peso" aria-label="Peso" title="Peso">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="6" r="2"/>
+        <path d="M5 8l1.5 9h11L19 8"/>
+        <line x1="3" y1="20" x2="21" y2="20"/>
+      </svg>
+    </button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="bundle.js"></script>
+</body>
+</html>
