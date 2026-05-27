@@ -1,5 +1,4 @@
 import DB from '../db.js';
-import { startTimer } from '../components/timer.js';
 import { showToast, today, formatDate, escapeHtml } from '../utils.js';
 
 export function mount(container) {
@@ -194,19 +193,12 @@ function renderSessao(container, plano) {
       exercicios: plano.exercicios.map(ex => ({
         exercicioId: ex.id,
         nome: ex.nome,
-        tempoDescanso: ex.tempoDescanso || 90,
-        series: [],
         metaSeries: ex.series,
         metaReps: ex.reps,
+        tempoDescanso: ex.tempoDescanso || 90,
       })),
     });
   }
-  renderSessaoUI(container, plano, sessao);
-}
-
-function renderSessaoUI(container, plano, sessao) {
-  const totalSeries = sessao.exercicios.reduce((acc, ex) => acc + ex.metaSeries, 0);
-  const seriesFeitas = sessao.exercicios.reduce((acc, ex) => acc + ex.series.length, 0);
 
   container.innerHTML = `
     <div class="view-header">
@@ -215,12 +207,17 @@ function renderSessaoUI(container, plano, sessao) {
         <h1>${escapeHtml(plano.nome)}</h1>
         <span class="divisao-badge">${plano.divisao}</span>
       </div>
-      ${sessao.concluido
-        ? `<span class="badge-done">✓ Feito</span>`
-        : `<span class="sessao-progress">${seriesFeitas}/${totalSeries}</span>`}
+      ${sessao.concluido ? `<span class="badge-done">✓ Feito</span>` : ''}
     </div>
     <div class="exercicio-sessao-list">
-      ${sessao.exercicios.map((ex, ei) => buildExercicioSessaoHTML(ex, ei, sessao.concluido)).join('')}
+      ${sessao.exercicios.map(ex => `
+        <div class="card exercicio-sessao-card">
+          <div class="ex-sessao-header">
+            <h3>${escapeHtml(ex.nome)}</h3>
+            <span class="text-muted">${ex.metaSeries} séries · ${ex.metaReps} reps</span>
+          </div>
+        </div>
+      `).join('')}
     </div>
     ${!sessao.concluido ? `
       <button class="btn btn-primary btn-full mt-lg" id="btn-concluir">Marcar como concluído 💪</button>
@@ -233,56 +230,8 @@ function renderSessaoUI(container, plano, sessao) {
     container.querySelector('#btn-concluir').onclick = () => {
       sessao.concluido = true;
       DB.updateSessao(sessao);
-      renderSessaoUI(container, plano, sessao);
+      renderSessao(container, plano);
       showToast('Treino concluído! 💪');
     };
-
-    container.querySelectorAll('.btn-add-serie').forEach(btn => {
-      btn.onclick = () => {
-        const ei = parseInt(btn.dataset.ei);
-        const ex = sessao.exercicios[ei];
-        const reps = parseInt(container.querySelector(`#reps-${ei}`).value) || 0;
-
-        if (reps <= 0) { showToast('Informe as repetições'); return; }
-
-        ex.series.push({ reps });
-        DB.updateSessao(sessao);
-
-        if (ex.tempoDescanso > 0) startTimer(ex.tempoDescanso);
-
-        renderSessaoUI(container, plano, sessao);
-      };
-    });
   }
-}
-
-function buildExercicioSessaoHTML(ex, ei, readonly) {
-  const done = ex.series.length >= ex.metaSeries;
-
-  return `
-    <div class="card exercicio-sessao-card ${done ? 'ex-done' : ''}">
-      <div class="ex-sessao-header">
-        <h3>${escapeHtml(ex.nome)}</h3>
-        <span class="text-muted">${ex.series.length}/${ex.metaSeries} · ${ex.metaReps} reps</span>
-      </div>
-      ${ex.series.length > 0 ? `
-        <div class="series-list">
-          ${ex.series.map((s, si) => `
-            <div class="serie-row">
-              <span class="serie-num">${si + 1}</span>
-              <span>${s.reps} reps</span>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-      ${!readonly && !done ? `
-        <div class="add-serie-form">
-          <div class="add-serie-inputs">
-            <input id="reps-${ei}" type="number" min="1" max="100" placeholder="Reps" inputmode="numeric">
-            <button class="btn btn-primary btn-add-serie" data-ei="${ei}">+ Série</button>
-          </div>
-        </div>
-      ` : ''}
-    </div>
-  `;
 }

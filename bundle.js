@@ -212,6 +212,22 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  // Icon helper (Lucide SVGs)
+  function icon(name, size) {
+    size = size || 18;
+    var p = {
+      'arrow-left': '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+      'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      'dumbbell': '<path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>',
+      'refresh-cw': '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+      'delete-left': '<path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6"/><path d="m18 9-6 6"/>',
+      'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+      'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+      'trophy': '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>'
+    };
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">' + (p[name] || '') + '</svg>';
+  }
+
   // js/views/treinos.js
   function mount(container) {
     renderHome(container);
@@ -227,7 +243,7 @@
     </div>
     ${planos.length === 0 ? `
       <div class="empty-state">
-        <p class="empty-icon">\u{1F3CB}\uFE0F</p>
+        <div class="empty-icon">${icon('dumbbell', 48)}</div>
         <p>Nenhum plano ainda.</p>
         <p class="text-muted">Crie seu primeiro treino!</p>
       </div>
@@ -241,14 +257,14 @@
             <div class="plano-info">
               <div class="plano-info-top">
                 <span class="divisao-badge">${p.divisao}</span>
-                ${sessaoHoje?.concluido ? '<span class="badge-done">\u2713 Feito hoje</span>' : sessaoHoje ? '<span class="badge-progress">\u25CF Em andamento</span>' : ""}
+                ${sessaoHoje?.concluido ? '<span class="badge-done">Feito hoje</span>' : sessaoHoje ? '<span class="badge-progress">Em andamento</span>' : ""}
               </div>
               <h3>${escapeHtml(p.nome)}</h3>
               <p class="text-muted">${p.exercicios.length} exerc\xEDcio${p.exercicios.length !== 1 ? "s" : ""}</p>
             </div>
             <div class="plano-actions">
               <button class="btn btn-primary btn-iniciar" data-id="${p.id}">${btnLabel}</button>
-              <button class="btn-icon btn-deletar" data-id="${p.id}" title="Deletar">\u2715</button>
+              <button class="btn-icon btn-deletar" data-id="${p.id}" title="Deletar">${icon('x')}</button>
             </div>
           </div>
         `;
@@ -292,7 +308,7 @@
     const data = plano || { nome: "", divisao: "A", exercicios: [] };
     container.innerHTML = `
     <div class="view-header">
-      <button class="btn-back" id="btn-back">\u2190</button>
+      <button class="btn-back" id="btn-back">${icon('arrow-left')}</button>
       <h1>${isEdit ? "Editar plano" : "Novo plano"}</h1>
     </div>
     <form id="form-plano" class="form-stack">
@@ -367,7 +383,7 @@
     <div class="exercicio-input" data-id="${ex.id || ""}">
       <div class="ex-row">
         <input class="ex-nome" type="text" placeholder="Nome do exerc\xEDcio" value="${escapeHtml(ex.nome || "")}">
-        <button type="button" class="btn-icon btn-rm-ex" title="Remover">\u2715</button>
+        <button type="button" class="btn-icon btn-rm-ex" title="Remover">${icon('x')}</button>
       </div>
       <div class="ex-params">
         <label>S\xE9ries<input class="ex-series" type="number" min="1" max="20" value="${ex.series || 3}"></label>
@@ -389,32 +405,33 @@
         exercicios: plano.exercicios.map((ex) => ({
           exercicioId: ex.id,
           nome: ex.nome,
-          tempoDescanso: ex.tempoDescanso || 90,
-          series: [],
           metaSeries: ex.series,
-          metaReps: ex.reps
+          metaReps: ex.reps,
+          tempoDescanso: ex.tempoDescanso || 90
         }))
       });
     }
-    renderSessaoUI(container, plano, sessao);
-  }
-  function renderSessaoUI(container, plano, sessao) {
-    const totalSeries = sessao.exercicios.reduce((acc, ex) => acc + ex.metaSeries, 0);
-    const seriesFeitas = sessao.exercicios.reduce((acc, ex) => acc + ex.series.length, 0);
     container.innerHTML = `
     <div class="view-header">
-      <button class="btn-back" id="btn-back">\u2190</button>
+      <button class="btn-back" id="btn-back">${icon('arrow-left')}</button>
       <div style="flex:1;min-width:0">
         <h1>${escapeHtml(plano.nome)}</h1>
         <span class="divisao-badge">${plano.divisao}</span>
       </div>
-      ${sessao.concluido ? `<span class="badge-done">\u2713 Feito</span>` : `<span class="sessao-progress">${seriesFeitas}/${totalSeries}</span>`}
+      ${sessao.concluido ? `<span class="badge-done">Feito</span>` : ""}
     </div>
     <div class="exercicio-sessao-list">
-      ${sessao.exercicios.map((ex, ei) => buildExercicioSessaoHTML(ex, ei, sessao.concluido)).join("")}
+      ${sessao.exercicios.map((ex) => `
+        <div class="card exercicio-sessao-card">
+          <div class="ex-sessao-header">
+            <h3>${escapeHtml(ex.nome)}</h3>
+            <span class="text-muted">${ex.metaSeries} s\xE9ries \xB7 ${ex.metaReps} reps</span>
+          </div>
+        </div>
+      `).join("")}
     </div>
     ${!sessao.concluido ? `
-      <button class="btn btn-primary btn-full mt-lg" id="btn-concluir">Marcar como conclu\xEDdo \u{1F4AA}</button>
+      <button class="btn btn-primary btn-full mt-lg" id="btn-concluir">Marcar como conclu\xEDdo</button>
     ` : ""}
   `;
     container.querySelector("#btn-back").onclick = () => renderHome(container);
@@ -422,54 +439,10 @@
       container.querySelector("#btn-concluir").onclick = () => {
         sessao.concluido = true;
         db_default.updateSessao(sessao);
-        renderSessaoUI(container, plano, sessao);
-        showToast("Treino conclu\xEDdo! \u{1F4AA}");
+        renderSessao(container, plano);
+        showToast("Treino conclu\xEDdo!");
       };
-      container.querySelectorAll(".btn-add-serie").forEach((btn) => {
-        btn.onclick = () => {
-          const ei = parseInt(btn.dataset.ei);
-          const ex = sessao.exercicios[ei];
-          const reps = parseInt(container.querySelector(`#reps-${ei}`).value) || 0;
-          if (reps <= 0) {
-            showToast("Informe as repeti\xE7\xF5es");
-            return;
-          }
-          ex.series.push({ reps });
-          db_default.updateSessao(sessao);
-          if (ex.tempoDescanso > 0) startTimer(ex.tempoDescanso);
-          renderSessaoUI(container, plano, sessao);
-        };
-      });
     }
-  }
-  function buildExercicioSessaoHTML(ex, ei, readonly) {
-    const done = ex.series.length >= ex.metaSeries;
-    return `
-    <div class="card exercicio-sessao-card ${done ? "ex-done" : ""}">
-      <div class="ex-sessao-header">
-        <h3>${escapeHtml(ex.nome)}</h3>
-        <span class="text-muted">${ex.series.length}/${ex.metaSeries} \xB7 ${ex.metaReps} reps</span>
-      </div>
-      ${ex.series.length > 0 ? `
-        <div class="series-list">
-          ${ex.series.map((s, si) => `
-            <div class="serie-row">
-              <span class="serie-num">${si + 1}</span>
-              <span>${s.reps} reps</span>
-            </div>
-          `).join("")}
-        </div>
-      ` : ""}
-      ${!readonly && !done ? `
-        <div class="add-serie-form">
-          <div class="add-serie-inputs">
-            <input id="reps-${ei}" type="number" min="1" max="100" placeholder="Reps" inputmode="numeric">
-            <button class="btn btn-primary btn-add-serie" data-ei="${ei}">+ S\xE9rie</button>
-          </div>
-        </div>
-      ` : ""}
-    </div>
-  `;
   }
 
   // js/views/progresso.js
@@ -485,7 +458,7 @@
     </div>
     ${exercicios.length === 0 ? `
       <div class="empty-state">
-        <p class="empty-icon">\u{1F3CB}\uFE0F</p>
+        <div class="empty-icon">${icon('dumbbell', 48)}</div>
         <p>Nenhum exerc\xEDcio ainda.</p>
         <p class="text-muted">Registre suas m\xE1quinas e cargas!</p>
       </div>
@@ -502,7 +475,7 @@
             </div>
             <div class="plano-actions">
               <button class="btn btn-secondary btn-sm btn-editar-ex" data-id="${ex.id}">Editar</button>
-              <button class="btn-icon btn-deletar-ex" data-id="${ex.id}">\u2715</button>
+              <button class="btn-icon btn-deletar-ex" data-id="${ex.id}">${icon('x')}</button>
             </div>
           </div>
         `).join("")}
@@ -530,7 +503,7 @@
     const data = ex || { nome: "", reps: "", ultimoPeso: "" };
     container.innerHTML = `
     <div class="view-header">
-      <button class="btn-back" id="btn-back">\u2190</button>
+      <button class="btn-back" id="btn-back">${icon('arrow-left')}</button>
       <h1>${isEdit ? "Editar exerc\xEDcio" : "Novo exerc\xEDcio"}</h1>
     </div>
     <form id="form-ex" class="form-stack">
@@ -613,9 +586,9 @@
         </div>
       </div>
     </div>
-    ${ml >= meta ? `<p class="text-center text-success mt-md font-bold">Meta atingida! \u{1F389}</p>` : `<p class="text-center text-muted mt-md">${meta - ml}ml para a meta</p>`}
+    ${ml >= meta ? `<p class="text-center text-success mt-md font-bold">Meta atingida!</p>` : `<p class="text-center text-muted mt-md">${meta - ml}ml para a meta</p>`}
     <div class="agua-buttons mt-lg">
-      ${[150, 200, 300, 500].map((v) => `
+      ${[200, 500, 1000, 1800].map((v) => `
         <button class="btn btn-secondary btn-agua" data-ml="${v}">+${v}ml</button>
       `).join("")}
     </div>
@@ -624,7 +597,7 @@
       <div class="add-serie-inputs">
         <input id="agua-custom" type="number" min="50" step="50" placeholder="ml" inputmode="numeric">
         <button class="btn btn-primary" id="btn-agua-custom">Adicionar</button>
-        <button class="btn btn-secondary" id="btn-agua-reset" title="Zerar hoje">\u{1F504}</button>
+        <button class="btn btn-secondary btn-icon" id="btn-agua-reset" title="Zerar hoje">${icon('refresh-cw')}</button>
       </div>
     </div>
     <div class="field mt-md">
@@ -716,7 +689,7 @@
         `).join("")}
         <button class="numpad-btn" data-num=".">.</button>
         <button class="numpad-btn" data-num="0">0</button>
-        <button class="numpad-btn numpad-del" data-action="del">\u232B</button>
+        <button class="numpad-btn numpad-del" data-action="del">${icon('delete-left', 22)}</button>
         <button class="numpad-btn numpad-confirm" data-action="confirm">Salvar</button>
       </div>
     </div>
@@ -736,9 +709,9 @@
 
     <div class="peso-calendar mt-lg">
       <div class="cal-header">
-        <button class="cal-nav btn-icon" data-dir="-1">\u2039</button>
+        <button class="cal-nav btn-icon" data-dir="-1">${icon('chevron-left')}</button>
         <h3>${formatMonth(state.month)}</h3>
-        <button class="cal-nav btn-icon" data-dir="1">\u203A</button>
+        <button class="cal-nav btn-icon" data-dir="1">${icon('chevron-right')}</button>
       </div>
       ${renderCalendar(state.month, pesos, t)}
     </div>
