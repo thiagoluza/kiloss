@@ -303,9 +303,21 @@ body.offline .offline-banner {
   padding: 4px 6px;
   opacity: 0.5;
   transition: opacity var(--transition);
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-icon:hover { opacity: 1; }
+.btn-header-icon {
+  opacity: 1;
+  color: var(--indigo-bloom);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+}
+.header-actions { display: flex; align-items: center; gap: var(--spacing-sm); }
 
 /* ─── Badges ──────────────────────────────────────── */
 .divisao-badge {

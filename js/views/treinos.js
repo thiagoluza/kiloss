@@ -5,6 +5,45 @@ export function mount(container) {
   renderHome(container);
 }
 
+function exportPlanos() {
+  const planos = DB.getPlanos();
+  if (planos.length === 0) { showToast('Nenhum plano para exportar'); return; }
+  const blob = new Blob([JSON.stringify(planos, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'kiloss-treinos.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exportado!');
+}
+
+function importPlanos(container) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data)) throw new Error();
+        data.forEach(p => { if (!p.nome || !Array.isArray(p.exercicios)) throw new Error(); });
+        const imported = data.map(p => ({ ...p, id: crypto.randomUUID() }));
+        DB.savePlanos([...DB.getPlanos(), ...imported]);
+        showToast(`${imported.length} plano(s) importado(s)!`);
+        renderHome(container);
+      } catch {
+        showToast('Arquivo inválido');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
 function renderHome(container) {
   const planos = DB.getPlanos();
   const t = today();
@@ -13,7 +52,11 @@ function renderHome(container) {
   container.innerHTML = `
     <div class="view-header">
       <h1>Treinos</h1>
-      <button class="btn btn-primary" id="btn-novo-plano">+ Novo</button>
+      <div class="header-actions">
+        <button class="btn-icon btn-header-icon" id="btn-exportar" title="Exportar treinos">↓</button>
+        <button class="btn-icon btn-header-icon" id="btn-importar" title="Importar treinos">↑</button>
+        <button class="btn btn-primary" id="btn-novo-plano">+ Novo</button>
+      </div>
     </div>
     ${planos.length === 0 ? `
       <div class="empty-state">
@@ -48,6 +91,8 @@ function renderHome(container) {
   `;
 
   container.querySelector('#btn-novo-plano').onclick = () => renderFormPlano(container);
+  container.querySelector('#btn-exportar').onclick = () => exportPlanos();
+  container.querySelector('#btn-importar').onclick = () => importPlanos(container);
 
   container.querySelectorAll('.btn-iniciar').forEach(btn => {
     btn.onclick = () => {
