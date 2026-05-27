@@ -85,6 +85,26 @@ const DB = {
     localStorage.setItem('pesos', JSON.stringify(list));
   },
 
+  // --- Catálogo de exercícios ---
+  getExercicios() { return JSON.parse(localStorage.getItem('ex_catalog') || '[]'); },
+  addExercicio(ex) {
+    ex.id = crypto.randomUUID();
+    const list = this.getExercicios();
+    list.push(ex);
+    localStorage.setItem('ex_catalog', JSON.stringify(list));
+    return ex;
+  },
+  updateExercicio(ex) {
+    const list = this.getExercicios();
+    const i = list.findIndex(e => e.id === ex.id);
+    if (i >= 0) list[i] = ex;
+    localStorage.setItem('ex_catalog', JSON.stringify(list));
+  },
+  deleteExercicio(id) {
+    const list = this.getExercicios().filter(e => e.id !== id);
+    localStorage.setItem('ex_catalog', JSON.stringify(list));
+  },
+
   // --- Config ---
   getConfig() { return JSON.parse(localStorage.getItem('config') || '{"metaAgua":2000}'); },
   setConfig(v) { localStorage.setItem('config', JSON.stringify(v)); },

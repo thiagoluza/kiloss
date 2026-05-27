@@ -242,15 +242,12 @@ function renderSessaoUI(container, plano, sessao) {
         const ei = parseInt(btn.dataset.ei);
         const ex = sessao.exercicios[ei];
         const reps = parseInt(container.querySelector(`#reps-${ei}`).value) || 0;
-        const carga = parseFloat(container.querySelector(`#carga-${ei}`).value) || 0;
 
         if (reps <= 0) { showToast('Informe as repetições'); return; }
 
-        const isPR = DB.checkAndUpdatePR(ex.nome, carga);
-        ex.series.push({ reps, carga, pr: isPR });
+        ex.series.push({ reps });
         DB.updateSessao(sessao);
 
-        if (isPR && carga > 0) showToast(`🏆 Novo PR em ${ex.nome}: ${carga}kg!`);
         if (ex.tempoDescanso > 0) startTimer(ex.tempoDescanso);
 
         renderSessaoUI(container, plano, sessao);
@@ -260,7 +257,6 @@ function renderSessaoUI(container, plano, sessao) {
 }
 
 function buildExercicioSessaoHTML(ex, ei, readonly) {
-  const suggested = getSuggestedLoad(ex.nome, ex.metaSeries);
   const done = ex.series.length >= ex.metaSeries;
 
   return `
@@ -272,41 +268,21 @@ function buildExercicioSessaoHTML(ex, ei, readonly) {
       ${ex.series.length > 0 ? `
         <div class="series-list">
           ${ex.series.map((s, si) => `
-            <div class="serie-row ${s.pr ? 'serie-pr' : ''}">
+            <div class="serie-row">
               <span class="serie-num">${si + 1}</span>
               <span>${s.reps} reps</span>
-              <span>${s.carga > 0 ? s.carga + 'kg' : '—'}</span>
-              ${s.pr ? `<span class="pr-badge">PR 🏆</span>` : ''}
             </div>
           `).join('')}
         </div>
       ` : ''}
       ${!readonly && !done ? `
         <div class="add-serie-form">
-          ${suggested !== null ? `<p class="sugestao">💡 Sugestão: ${suggested}kg</p>` : ''}
           <div class="add-serie-inputs">
             <input id="reps-${ei}" type="number" min="1" max="100" placeholder="Reps" inputmode="numeric">
-            <input id="carga-${ei}" type="number" min="0" max="999" step="0.5" placeholder="Carga (kg)" value="${suggested !== null ? suggested : ''}" inputmode="decimal">
             <button class="btn btn-primary btn-add-serie" data-ei="${ei}">+ Série</button>
           </div>
         </div>
       ` : ''}
     </div>
   `;
-}
-
-function getSuggestedLoad(exercicioNome, metaSeries) {
-  const sessoes = DB.getSessoes()
-    .filter(s => s.concluido)
-    .sort((a, b) => b.data.localeCompare(a.data));
-
-  for (const s of sessoes) {
-    const ex = s.exercicios?.find(e => e.nome === exercicioNome);
-    if (!ex || ex.series.length === 0) continue;
-    const maxCarga = Math.max(...ex.series.map(s => s.carga));
-    return ex.series.length >= (ex.metaSeries || metaSeries)
-      ? maxCarga + 2.5
-      : maxCarga;
-  }
-  return null;
 }

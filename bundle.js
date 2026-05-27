@@ -123,6 +123,27 @@
       list.sort((a, b) => a.data.localeCompare(b.data));
       localStorage.setItem("pesos", JSON.stringify(list));
     },
+    // --- Catálogo de exercícios ---
+    getExercicios() {
+      return JSON.parse(localStorage.getItem("ex_catalog") || "[]");
+    },
+    addExercicio(ex) {
+      ex.id = crypto.randomUUID();
+      const list = this.getExercicios();
+      list.push(ex);
+      localStorage.setItem("ex_catalog", JSON.stringify(list));
+      return ex;
+    },
+    updateExercicio(ex) {
+      const list = this.getExercicios();
+      const i = list.findIndex((e) => e.id === ex.id);
+      if (i >= 0) list[i] = ex;
+      localStorage.setItem("ex_catalog", JSON.stringify(list));
+    },
+    deleteExercicio(id) {
+      const list = this.getExercicios().filter((e) => e.id !== id);
+      localStorage.setItem("ex_catalog", JSON.stringify(list));
+    },
     // --- Config ---
     getConfig() {
       return JSON.parse(localStorage.getItem("config") || '{"metaAgua":2000}');
@@ -409,15 +430,12 @@
           const ei = parseInt(btn.dataset.ei);
           const ex = sessao.exercicios[ei];
           const reps = parseInt(container.querySelector(`#reps-${ei}`).value) || 0;
-          const carga = parseFloat(container.querySelector(`#carga-${ei}`).value) || 0;
           if (reps <= 0) {
             showToast("Informe as repeti\xE7\xF5es");
             return;
           }
-          const isPR = db_default.checkAndUpdatePR(ex.nome, carga);
-          ex.series.push({ reps, carga, pr: isPR });
+          ex.series.push({ reps });
           db_default.updateSessao(sessao);
-          if (isPR && carga > 0) showToast(`\u{1F3C6} Novo PR em ${ex.nome}: ${carga}kg!`);
           if (ex.tempoDescanso > 0) startTimer(ex.tempoDescanso);
           renderSessaoUI(container, plano, sessao);
         };
@@ -425,7 +443,6 @@
     }
   }
   function buildExercicioSessaoHTML(ex, ei, readonly) {
-    const suggested = getSuggestedLoad(ex.nome, ex.metaSeries);
     const done = ex.series.length >= ex.metaSeries;
     return `
     <div class="card exercicio-sessao-card ${done ? "ex-done" : ""}">
@@ -436,21 +453,17 @@
       ${ex.series.length > 0 ? `
         <div class="series-list">
           ${ex.series.map((s, si) => `
-            <div class="serie-row ${s.pr ? "serie-pr" : ""}">
+            <div class="serie-row">
               <span class="serie-num">${si + 1}</span>
               <span>${s.reps} reps</span>
-              <span>${s.carga > 0 ? s.carga + "kg" : "\u2014"}</span>
-              ${s.pr ? `<span class="pr-badge">PR \u{1F3C6}</span>` : ""}
             </div>
           `).join("")}
         </div>
       ` : ""}
       ${!readonly && !done ? `
         <div class="add-serie-form">
-          ${suggested !== null ? `<p class="sugestao">\u{1F4A1} Sugest\xE3o: ${suggested}kg</p>` : ""}
           <div class="add-serie-inputs">
             <input id="reps-${ei}" type="number" min="1" max="100" placeholder="Reps" inputmode="numeric">
-            <input id="carga-${ei}" type="number" min="0" max="999" step="0.5" placeholder="Carga (kg)" value="${suggested !== null ? suggested : ""}" inputmode="decimal">
             <button class="btn btn-primary btn-add-serie" data-ei="${ei}">+ S\xE9rie</button>
           </div>
         </div>
@@ -458,134 +471,107 @@
     </div>
   `;
   }
-  function getSuggestedLoad(exercicioNome, metaSeries) {
-    const sessoes = db_default.getSessoes().filter((s) => s.concluido).sort((a, b) => b.data.localeCompare(a.data));
-    for (const s of sessoes) {
-      const ex = s.exercicios?.find((e) => e.nome === exercicioNome);
-      if (!ex || ex.series.length === 0) continue;
-      const maxCarga = Math.max(...ex.series.map((s2) => s2.carga));
-      return ex.series.length >= (ex.metaSeries || metaSeries) ? maxCarga + 2.5 : maxCarga;
-    }
-    return null;
-  }
 
   // js/views/progresso.js
   function mount2(container) {
-    const sessoes = db_default.getSessoes().filter((s) => s.concluido);
-    const streak = calcStreak(sessoes);
-    const exercicios = getUniqueExercicios(sessoes);
+    renderList(container);
+  }
+  function renderList(container) {
+    const exercicios = db_default.getExercicios();
     container.innerHTML = `
     <div class="view-header">
-      <h1>Progresso</h1>
+      <h1>Exerc\xEDcios</h1>
+      <button class="btn btn-primary" id="btn-novo-ex">+ Novo</button>
     </div>
-    <div class="streak-card card">
-      <span class="streak-num">${streak}</span>
-      <span class="streak-label">dia${streak !== 1 ? "s" : ""} seguido${streak !== 1 ? "s" : ""} \u{1F525}</span>
-    </div>
-    <div class="mt-md">
-      ${renderSemanaCompare(sessoes)}
-    </div>
-    <div class="field mt-lg">
-      <label>Evolu\xE7\xE3o por exerc\xEDcio</label>
-      <select id="ex-select">
-        <option value="">Selecione um exerc\xEDcio...</option>
-        ${exercicios.map((e) => `<option value="${e}">${e}</option>`).join("")}
-      </select>
-    </div>
-    <div id="chart-container" class="mt-md"></div>
+    ${exercicios.length === 0 ? `
+      <div class="empty-state">
+        <p class="empty-icon">\u{1F3CB}\uFE0F</p>
+        <p>Nenhum exerc\xEDcio ainda.</p>
+        <p class="text-muted">Registre suas m\xE1quinas e cargas!</p>
+      </div>
+    ` : `
+      <div class="ex-catalog-list">
+        ${exercicios.map((ex) => `
+          <div class="card ex-catalog-card">
+            <div class="ex-catalog-info">
+              <h3>${escapeHtml(ex.nome)}</h3>
+              <div class="ex-catalog-tags">
+                ${ex.reps ? `<span class="ex-tag">${ex.reps} reps</span>` : ""}
+                ${ex.ultimoPeso ? `<span class="ex-tag ex-tag-peso">${ex.ultimoPeso} kg</span>` : ""}
+              </div>
+            </div>
+            <div class="plano-actions">
+              <button class="btn btn-secondary btn-sm btn-editar-ex" data-id="${ex.id}">Editar</button>
+              <button class="btn-icon btn-deletar-ex" data-id="${ex.id}">\u2715</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `}
   `;
-    container.querySelector("#ex-select").onchange = (e) => {
-      const nome = e.target.value;
-      const chartEl = container.querySelector("#chart-container");
+    container.querySelector("#btn-novo-ex").onclick = () => renderForm(container);
+    container.querySelectorAll(".btn-editar-ex").forEach((btn) => {
+      btn.onclick = () => {
+        const ex = db_default.getExercicios().find((e) => e.id === btn.dataset.id);
+        if (ex) renderForm(container, ex);
+      };
+    });
+    container.querySelectorAll(".btn-deletar-ex").forEach((btn) => {
+      btn.onclick = () => {
+        if (confirm("Remover este exerc\xEDcio?")) {
+          db_default.deleteExercicio(btn.dataset.id);
+          renderList(container);
+        }
+      };
+    });
+  }
+  function renderForm(container, ex = null) {
+    const isEdit = !!ex;
+    const data = ex || { nome: "", reps: "", ultimoPeso: "" };
+    container.innerHTML = `
+    <div class="view-header">
+      <button class="btn-back" id="btn-back">\u2190</button>
+      <h1>${isEdit ? "Editar exerc\xEDcio" : "Novo exerc\xEDcio"}</h1>
+    </div>
+    <form id="form-ex" class="form-stack">
+      <div class="field">
+        <label>Nome da m\xE1quina / exerc\xEDcio</label>
+        <input type="text" id="ex-nome" value="${escapeHtml(data.nome)}" placeholder="Ex: Supino, Leg Press, Puxada...">
+      </div>
+      <div class="field">
+        <label>Repeti\xE7\xF5es</label>
+        <input type="text" id="ex-reps" value="${escapeHtml(data.reps || "")}" placeholder="Ex: 12 ou 8-12">
+      </div>
+      <div class="field">
+        <label>\xDAltimo peso usado (kg)</label>
+        <input type="number" id="ex-peso" value="${data.ultimoPeso || ""}" min="0" step="0.5" placeholder="Ex: 60" inputmode="decimal">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-lg">${isEdit ? "Salvar altera\xE7\xF5es" : "Adicionar exerc\xEDcio"}</button>
+    </form>
+  `;
+    container.querySelector("#btn-back").onclick = () => renderList(container);
+    container.querySelector("#form-ex").onsubmit = (e) => {
+      e.preventDefault();
+      const nome = container.querySelector("#ex-nome").value.trim();
       if (!nome) {
-        chartEl.innerHTML = "";
+        showToast("Informe o nome do exerc\xEDcio");
         return;
       }
-      const data = getExercicioData(sessoes, nome);
-      chartEl.innerHTML = renderLineChart(data, nome, "var(--indigo)");
+      const entry = {
+        id: ex?.id,
+        nome,
+        reps: container.querySelector("#ex-reps").value.trim(),
+        ultimoPeso: parseFloat(container.querySelector("#ex-peso").value) || 0
+      };
+      if (isEdit) {
+        db_default.updateExercicio(entry);
+        showToast("Exerc\xEDcio atualizado!");
+      } else {
+        db_default.addExercicio(entry);
+        showToast("Exerc\xEDcio adicionado!");
+      }
+      renderList(container);
     };
-  }
-  function calcStreak(sessoes) {
-    if (!sessoes.length) return 0;
-    const datas = [...new Set(sessoes.map((s) => s.data))].sort().reverse();
-    const t = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    let streak = 0;
-    let cur = new Date(t);
-    for (const data of datas) {
-      const d = new Date(data);
-      const diff = Math.round((cur - d) / 864e5);
-      if (diff <= 1) {
-        streak++;
-        cur = d;
-      } else break;
-    }
-    return streak;
-  }
-  function getUniqueExercicios(sessoes) {
-    const set = /* @__PURE__ */ new Set();
-    sessoes.forEach((s) => s.exercicios?.forEach((e) => set.add(e.nome)));
-    return [...set].sort();
-  }
-  function getExercicioData(sessoes, nome) {
-    return sessoes.filter((s) => s.exercicios?.some((e) => e.nome === nome)).map((s) => {
-      const ex = s.exercicios.find((e) => e.nome === nome);
-      const maxCarga = ex.series.length ? Math.max(...ex.series.map((s2) => s2.carga)) : 0;
-      return { data: s.data, carga: maxCarga };
-    }).sort((a, b) => a.data.localeCompare(b.data));
-  }
-  function renderSemanaCompare(sessoes) {
-    const t = /* @__PURE__ */ new Date();
-    const startOfWeek = new Date(t);
-    startOfWeek.setDate(t.getDate() - t.getDay());
-    const startOfLastWeek = new Date(startOfWeek);
-    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
-    const fmt = (d) => d.toISOString().slice(0, 10);
-    const thisWeek = sessoes.filter((s) => s.data >= fmt(startOfWeek)).length;
-    const lastWeek = sessoes.filter((s) => s.data >= fmt(startOfLastWeek) && s.data < fmt(startOfWeek)).length;
-    const diff = thisWeek - lastWeek;
-    return `
-    <div class="semana-cards">
-      <div class="card semana-card">
-        <span class="semana-num">${thisWeek}</span>
-        <span class="semana-label">Esta semana</span>
-      </div>
-      <div class="card semana-card">
-        <span class="semana-num">${lastWeek}</span>
-        <span class="semana-label">Semana anterior</span>
-      </div>
-      <div class="card semana-card">
-        <span class="semana-num ${diff > 0 ? "text-success" : diff < 0 ? "text-danger" : ""}">${diff > 0 ? "+" : ""}${diff}</span>
-        <span class="semana-label">Diferen\xE7a</span>
-      </div>
-    </div>
-  `;
-  }
-  function renderLineChart(data, label, color = "var(--indigo)") {
-    if (data.length === 0) return '<p class="text-muted text-center mt-md">Sem dados ainda.</p>';
-    const W = 300, H = 150, PAD = 36;
-    const values = data.map((d) => d.carga);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = max - min || 1;
-    const xs = data.map((_, i) => PAD + i / Math.max(data.length - 1, 1) * (W - PAD * 2));
-    const ys = data.map((d) => PAD + (1 - (d.carga - min) / range) * (H - PAD * 2));
-    const polyline = xs.map((x, i) => `${x},${ys[i]}`).join(" ");
-    const dots = xs.map((x, i) => `
-    <circle cx="${x}" cy="${ys[i]}" r="4" fill="${color}">
-      <title>${data[i].data}: ${data[i].carga}kg</title>
-    </circle>
-  `).join("");
-    return `
-    <div class="chart-wrap">
-      <p class="chart-title">${label}</p>
-      <svg viewBox="0 0 ${W} ${H}" class="line-chart" aria-hidden="true">
-        <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
-        ${dots}
-        <text x="${PAD - 4}" y="${PAD + 4}" font-size="9" text-anchor="end" fill="var(--color-text-muted)">${max}kg</text>
-        <text x="${PAD - 4}" y="${H - PAD + 4}" font-size="9" text-anchor="end" fill="var(--color-text-muted)">${min}kg</text>
-      </svg>
-    </div>
-  `;
   }
 
   // js/views/hidratacao.js
