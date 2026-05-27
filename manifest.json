@@ -2,10 +2,11 @@
   "name": "Kiloss",
   "short_name": "Kiloss",
   "description": "Treinos, progresso e hábitos",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#fdfffc",
-  "theme_color": "#541388",
+  "background_color": "#fafafa",
+  "theme_color": "#5b21b6",
   "orientation": "portrait-primary",
   "icons": [
     {
