@@ -225,48 +225,55 @@
       'chevron-right': '<path d="m9 18 6-6-6-6"/>',
       'trophy': '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
       'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
-      'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'
+      'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+      'pencil': '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>'
     };
     return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">' + (p[name] || '') + '</svg>';
   }
 
   // js/views/treinos.js
-  function exportPlanos() {
+  function showIOModal(container) {
     const planos = db_default.getPlanos();
-    if (planos.length === 0) { showToast("Nenhum plano para exportar"); return; }
-    const blob = new Blob([JSON.stringify(planos, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "kiloss-treinos.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("Exportado!");
-  }
-  function importPlanos(container) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        try {
-          const data = JSON.parse(ev.target.result);
-          if (!Array.isArray(data)) throw new Error();
-          data.forEach((p) => { if (!p.nome || !Array.isArray(p.exercicios)) throw new Error(); });
-          const imported = data.map((p) => ({ ...p, id: crypto.randomUUID() }));
-          db_default.savePlanos([...db_default.getPlanos(), ...imported]);
-          showToast(imported.length + " plano(s) importado(s)!");
-          renderHome(container);
-        } catch {
-          showToast("Arquivo inv\xE1lido");
-        }
-      };
-      reader.readAsText(file);
+    const json = JSON.stringify(planos, null, 2);
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-header">
+          <span>Exportar / Importar</span>
+          <button class="btn-icon" id="modal-close">${icon('x', 20)}</button>
+        </div>
+        <p class="text-muted modal-hint">Para <strong>exportar</strong>: copie o texto abaixo.<br>Para <strong>importar</strong>: apague e cole o JSON copiado, depois clique em Importar.</p>
+        <textarea class="modal-textarea" id="modal-json" spellcheck="false">${escapeHtml(json)}</textarea>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="modal-copy">Copiar</button>
+          <button class="btn btn-primary" id="modal-import">Importar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector("#modal-close").onclick = close;
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector("#modal-copy").onclick = () => {
+      navigator.clipboard.writeText(overlay.querySelector("#modal-json").value)
+        .then(() => showToast("Copiado!"))
+        .catch(() => { overlay.querySelector("#modal-json").select(); document.execCommand("copy"); showToast("Copiado!"); });
     };
-    input.click();
+    overlay.querySelector("#modal-import").onclick = () => {
+      try {
+        const data = JSON.parse(overlay.querySelector("#modal-json").value);
+        if (!Array.isArray(data)) throw new Error();
+        data.forEach((p) => { if (!p.nome || !Array.isArray(p.exercicios)) throw new Error(); });
+        const imported = data.map((p) => ({ ...p, id: crypto.randomUUID() }));
+        db_default.savePlanos(imported);
+        showToast(imported.length + " plano(s) importado(s)!");
+        close();
+        renderHome(container);
+      } catch {
+        showToast("JSON inv\xE1lido");
+      }
+    };
   }
   function mount(container) {
     renderHome(container);
@@ -279,8 +286,7 @@
     <div class="view-header">
       <h1>Treinos</h1>
       <div class="header-actions">
-        <button class="btn-icon btn-header-icon" id="btn-exportar" title="Exportar treinos">${icon("download")}</button>
-        <button class="btn-icon btn-header-icon" id="btn-importar" title="Importar treinos">${icon("upload")}</button>
+        <button class="btn-icon btn-header-icon" id="btn-io" title="Exportar / Importar">${icon("download")}</button>
         <button class="btn btn-primary" id="btn-novo-plano">+ Novo</button>
       </div>
     </div>
@@ -307,6 +313,7 @@
             </div>
             <div class="plano-actions">
               <button class="btn btn-primary btn-iniciar" data-id="${p.id}">${btnLabel}</button>
+              <button class="btn-icon btn-editar-plano" data-id="${p.id}" title="Editar">${icon('pencil')}</button>
               <button class="btn-icon btn-deletar" data-id="${p.id}" title="Deletar">${icon('x')}</button>
             </div>
           </div>
@@ -316,12 +323,17 @@
     ${renderHistorico()}
   `;
     container.querySelector("#btn-novo-plano").onclick = () => renderFormPlano(container);
-    container.querySelector("#btn-exportar").onclick = () => exportPlanos();
-    container.querySelector("#btn-importar").onclick = () => importPlanos(container);
+    container.querySelector("#btn-io").onclick = () => showIOModal(container);
     container.querySelectorAll(".btn-iniciar").forEach((btn) => {
       btn.onclick = () => {
         const plano = db_default.getPlanos().find((p) => p.id === btn.dataset.id);
         if (plano) renderSessao(container, plano);
+      };
+    });
+    container.querySelectorAll(".btn-editar-plano").forEach((btn) => {
+      btn.onclick = () => {
+        const plano = db_default.getPlanos().find((p) => p.id === btn.dataset.id);
+        if (plano) renderFormPlano(container, plano);
       };
     });
     container.querySelectorAll(".btn-deletar").forEach((btn) => {
@@ -513,9 +525,9 @@
           <div class="card ex-catalog-card">
             <div class="ex-catalog-info">
               <h3>${escapeHtml(ex.nome)}</h3>
-              <div class="ex-catalog-tags">
-                ${ex.reps ? `<span class="ex-tag">${ex.reps} reps</span>` : ""}
-                ${ex.ultimoPeso ? `<span class="ex-tag ex-tag-peso">${ex.ultimoPeso} kg</span>` : ""}
+              <div class="ex-catalog-stats">
+                ${ex.reps ? `<div class="ex-stat"><span class="ex-stat-val">${ex.reps}</span><span class="ex-stat-label">reps</span></div>` : ""}
+                ${ex.ultimoPeso ? `<div class="ex-stat"><span class="ex-stat-val ex-stat-kg">${ex.ultimoPeso}</span><span class="ex-stat-label">kg</span></div>` : ""}
               </div>
             </div>
             <div class="plano-actions">

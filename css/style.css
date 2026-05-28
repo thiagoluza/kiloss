@@ -801,3 +801,80 @@ body.offline .offline-banner {
 }
 .timer-label { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--spacing-sm); }
 .timer-count { font-size: 4.5rem; font-weight: 900; color: var(--indigo); line-height: 1; margin-bottom: var(--spacing-lg); }
+
+/* ─── IO Modal (export / import) ─────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 400;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn .15s ease;
+}
+.modal-box {
+  background: var(--bright-snow);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--spacing-lg) var(--spacing-lg) calc(var(--spacing-lg) + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.modal-hint {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+.modal-textarea {
+  width: 100%;
+  height: 180px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+  font-family: monospace;
+  font-size: 0.78rem;
+  resize: vertical;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.modal-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+/* ─── Exercise catalog stats ──────────────────────── */
+.ex-catalog-stats {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+}
+.ex-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.ex-stat-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--indigo-bloom);
+  line-height: 1.1;
+}
+.ex-stat-kg {
+  color: var(--ochre);
+}
+.ex-stat-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

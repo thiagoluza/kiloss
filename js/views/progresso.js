@@ -25,9 +25,9 @@ function renderList(container) {
           <div class="card ex-catalog-card">
             <div class="ex-catalog-info">
               <h3>${escapeHtml(ex.nome)}</h3>
-              <div class="ex-catalog-tags">
-                ${ex.reps ? `<span class="ex-tag">${ex.reps} reps</span>` : ''}
-                ${ex.ultimoPeso ? `<span class="ex-tag ex-tag-peso">${ex.ultimoPeso} kg</span>` : ''}
+              <div class="ex-catalog-stats">
+                ${ex.reps ? `<div class="ex-stat"><span class="ex-stat-val">${ex.reps}</span><span class="ex-stat-label">reps</span></div>` : ''}
+                ${ex.ultimoPeso ? `<div class="ex-stat"><span class="ex-stat-val ex-stat-kg">${ex.ultimoPeso}</span><span class="ex-stat-label">kg</span></div>` : ''}
               </div>
             </div>
             <div class="plano-actions">
