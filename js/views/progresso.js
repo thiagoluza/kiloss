@@ -1,5 +1,5 @@
 import DB from '../db.js';
-import { showToast, escapeHtml } from '../utils.js';
+import { showToast, escapeHtml, icon } from '../utils.js';
 
 export function mount(container) {
   renderList(container);
@@ -15,7 +15,7 @@ function renderList(container) {
     </div>
     ${exercicios.length === 0 ? `
       <div class="empty-state">
-        <p class="empty-icon">🏋️</p>
+        <div class="empty-icon">${icon('dumbbell', 48)}</div>
         <p>Nenhum exercício ainda.</p>
         <p class="text-muted">Registre suas máquinas e cargas!</p>
       </div>
@@ -32,7 +32,7 @@ function renderList(container) {
             </div>
             <div class="plano-actions">
               <button class="btn btn-secondary btn-sm btn-editar-ex" data-id="${ex.id}">Editar</button>
-              <button class="btn-icon btn-deletar-ex" data-id="${ex.id}">✕</button>
+              <button class="btn-icon btn-deletar-ex" data-id="${ex.id}">${icon('x')}</button>
             </div>
           </div>
         `).join('')}
@@ -65,7 +65,7 @@ function renderForm(container, ex = null) {
 
   container.innerHTML = `
     <div class="view-header">
-      <button class="btn-back" id="btn-back">←</button>
+      <button class="btn-back" id="btn-back">${icon('arrow-left')}</button>
       <h1>${isEdit ? 'Editar exercício' : 'Novo exercício'}</h1>
     </div>
     <form id="form-ex" class="form-stack">

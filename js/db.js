@@ -1,3 +1,5 @@
+import { today } from './utils.js';
+
 const DB = {
   // --- Planos ---
   getPlanos() { return JSON.parse(localStorage.getItem('planos') || '[]'); },
@@ -36,7 +38,7 @@ const DB = {
     this.saveSessoes(list);
   },
   getTodaySessao(planoId) {
-    const t = new Date().toISOString().slice(0, 10);
+    const t = today();
     return this.getSessoes().find(s => s.planoId === planoId && s.data === t);
   },
 
@@ -48,7 +50,7 @@ const DB = {
     const prs = this.getPRs();
     const key = nome.toLowerCase().trim();
     if (!prs[key] || carga > prs[key].carga) {
-      prs[key] = { carga, data: new Date().toISOString().slice(0, 10) };
+      prs[key] = { carga, data: today() };
       this.savePRs(prs);
       return true;
     }
@@ -82,6 +84,10 @@ const DB = {
     if (i >= 0) list[i].kg = kg;
     else list.push({ data, kg });
     list.sort((a, b) => a.data.localeCompare(b.data));
+    localStorage.setItem('pesos', JSON.stringify(list));
+  },
+  deletePeso(data) {
+    const list = this.getPesos().filter(p => p.data !== data);
     localStorage.setItem('pesos', JSON.stringify(list));
   },
 

@@ -1,40 +1,52 @@
 import DB from '../db.js';
-import { showToast, today } from '../utils.js';
+import { showToast, today, toISODate, formatDate, icon } from '../utils.js';
 
 export function mount(container) {
-  const state = { display: '', month: new Date() };
+  const state = { display: '', month: new Date(), selected: today() };
   render(container, state);
 }
 
 function render(container, state) {
   const t = today();
   const pesos = DB.getPesos();
-  const todayPeso = pesos.find(p => p.data === t);
+  const isToday = state.selected === t;
+  const selectedPeso = pesos.find(p => p.data === state.selected);
   const weekAvg = calcWeekAvg(pesos, 0);
   const prevWeekAvg = calcWeekAvg(pesos, -1);
   const diff = weekAvg && prevWeekAvg ? +(weekAvg - prevWeekAvg).toFixed(1) : null;
 
-  const displayValue = state.display || (todayPeso ? String(todayPeso.kg) : '');
+  const displayValue = state.display || (selectedPeso ? String(selectedPeso.kg) : '');
 
   container.innerHTML = `
     <div class="view-header">
       <h1>Peso corporal</h1>
     </div>
 
-    <div class="numpad-wrap">
+    <div class="numpad-wrap ${isToday ? '' : 'numpad-editing'}">
+      <div class="numpad-date">
+        <span class="numpad-date-label">${isToday ? 'Hoje' : formatDayLabel(state.selected)}</span>
+        ${isToday ? '' : `<button class="numpad-date-today" data-action="today">Voltar para hoje</button>`}
+      </div>
       <div class="numpad-display">
         <span class="numpad-value">${displayValue || '—'}</span>
         <span class="numpad-unit">kg</span>
       </div>
-      ${todayPeso && !state.display ? `<p class="numpad-hint">Registrado hoje · toque para editar</p>` : ''}
+      <p class="numpad-hint">
+        ${selectedPeso && !state.display
+          ? 'Registrado · digite para alterar'
+          : isToday ? '&nbsp;' : 'Toque nos números para registrar este dia'}
+      </p>
       <div class="numpad-grid">
         ${[7,8,9,4,5,6,1,2,3].map(n => `
           <button class="numpad-btn" data-num="${n}">${n}</button>
         `).join('')}
         <button class="numpad-btn" data-num=".">.</button>
         <button class="numpad-btn" data-num="0">0</button>
-        <button class="numpad-btn numpad-del" data-action="del">⌫</button>
+        <button class="numpad-btn numpad-del" data-action="del" aria-label="Apagar dígito">${icon('delete-left', 22)}</button>
         <button class="numpad-btn numpad-confirm" data-action="confirm">Salvar</button>
+        ${selectedPeso ? `
+          <button class="numpad-remove" data-action="remove">${icon('trash', 16)} Excluir registro</button>
+        ` : ''}
       </div>
     </div>
 
@@ -51,13 +63,14 @@ function render(container, state) {
       </div>
     </div>
 
-    <div class="peso-calendar mt-lg">
+    <div class="card peso-calendar mt-lg">
       <div class="cal-header">
-        <button class="cal-nav btn-icon" data-dir="-1">‹</button>
+        <button class="cal-nav btn-icon" data-dir="-1" aria-label="Mês anterior">${icon('chevron-left')}</button>
         <h3>${formatMonth(state.month)}</h3>
-        <button class="cal-nav btn-icon" data-dir="1">›</button>
+        <button class="cal-nav btn-icon" data-dir="1" aria-label="Próximo mês">${icon('chevron-right')}</button>
       </div>
-      ${renderCalendar(state.month, pesos, t)}
+      ${renderCalendar(state.month, pesos, t, state.selected)}
+      <p class="cal-hint">Toque em um dia para editar o peso</p>
     </div>
   `;
 
@@ -83,11 +96,42 @@ function render(container, state) {
   container.querySelector('[data-action="confirm"]').onclick = () => {
     const v = parseFloat(state.display);
     if (!v || v < 20 || v > 400) { showToast('Peso inválido'); return; }
-    DB.addPeso(t, v);
+    DB.addPeso(state.selected, v);
     state.display = '';
-    showToast('Peso salvo!');
+    showToast(isToday ? 'Peso salvo!' : `Peso de ${formatDate(state.selected)} salvo!`);
     render(container, state);
   };
+
+  const removeBtn = container.querySelector('[data-action="remove"]');
+  if (removeBtn) {
+    removeBtn.onclick = () => {
+      if (!confirm(`Excluir o peso de ${formatDate(state.selected)}?`)) return;
+      DB.deletePeso(state.selected);
+      state.display = '';
+      showToast('Registro excluído');
+      render(container, state);
+    };
+  }
+
+  const todayBtn = container.querySelector('[data-action="today"]');
+  if (todayBtn) {
+    todayBtn.onclick = () => {
+      state.selected = t;
+      state.display = '';
+      state.month = new Date();
+      render(container, state);
+    };
+  }
+
+  container.querySelectorAll('.cal-cell[data-date]').forEach(cell => {
+    cell.onclick = () => {
+      if (cell.dataset.date === state.selected) return;
+      state.selected = cell.dataset.date;
+      state.display = '';
+      render(container, state);
+      container.querySelector('.numpad-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+  });
 
   container.querySelectorAll('.cal-nav').forEach(btn => {
     btn.onclick = () => {
@@ -98,7 +142,7 @@ function render(container, state) {
   });
 }
 
-function renderCalendar(month, pesos, todayStr) {
+function renderCalendar(month, pesos, todayStr, selected) {
   const year = month.getFullYear();
   const m = month.getMonth();
   const firstDay = new Date(year, m, 1).getDay();
@@ -115,12 +159,23 @@ function renderCalendar(month, pesos, todayStr) {
     const d = i + 1;
     const dateStr = `${year}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const peso = pesoMap[dateStr];
-    const isToday = dateStr === todayStr;
+    const isFuture = dateStr > todayStr;
+    const classes = [
+      'cal-cell',
+      dateStr === todayStr ? 'cal-today' : '',
+      dateStr === selected ? 'cal-selected' : '',
+      peso ? 'cal-has-peso' : '',
+      isFuture ? 'cal-future' : '',
+    ].filter(Boolean).join(' ');
+    // Dias futuros não são editáveis
+    if (isFuture) {
+      return `<div class="${classes}"><span class="cal-day-num">${d}</span></div>`;
+    }
     return `
-      <div class="cal-cell ${isToday ? 'cal-today' : ''} ${peso ? 'cal-has-peso' : ''}">
+      <button type="button" class="${classes}" data-date="${dateStr}">
         <span class="cal-day-num">${d}</span>
         ${peso ? `<span class="cal-peso-val">${peso}</span>` : ''}
-      </div>
+      </button>
     `;
   }).join('');
 
@@ -135,21 +190,21 @@ function renderCalendar(month, pesos, todayStr) {
 
 function calcWeekAvg(pesos, weekOffset = 0) {
   const t = new Date();
-  const startOfThisWeek = new Date(t);
-  startOfThisWeek.setDate(t.getDate() - t.getDay());
-  startOfThisWeek.setHours(0,0,0,0);
+  const start = new Date(t.getFullYear(), t.getMonth(), t.getDate() - t.getDay() + weekOffset * 7);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
 
-  const start = new Date(startOfThisWeek);
-  start.setDate(start.getDate() + weekOffset * 7);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 7);
-
-  const startStr = start.toISOString().slice(0, 10);
-  const endStr = end.toISOString().slice(0, 10);
+  const startStr = toISODate(start);
+  const endStr = toISODate(end);
 
   const week = pesos.filter(p => p.data >= startStr && p.data < endStr);
   if (!week.length) return null;
   return +(week.reduce((s, p) => s + p.kg, 0) / week.length).toFixed(1);
+}
+
+function formatDayLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const label = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function formatMonth(date) {

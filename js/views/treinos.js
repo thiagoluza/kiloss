@@ -1,5 +1,5 @@
 import DB from '../db.js';
-import { showToast, today, formatDate, escapeHtml } from '../utils.js';
+import { showToast, today, formatDate, escapeHtml, icon } from '../utils.js';
 
 export function mount(container) {
   renderHome(container);
@@ -14,7 +14,7 @@ function showIOModal(container) {
     <div class="modal-box">
       <div class="modal-header">
         <span>Exportar / Importar</span>
-        <button class="btn-icon" id="modal-close">✕</button>
+        <button class="btn-icon" id="modal-close">${icon('x', 20)}</button>
       </div>
       <p class="text-muted modal-hint">Para <strong>exportar</strong>: copie o texto abaixo.<br>Para <strong>importar</strong>: apague e cole o JSON copiado, depois clique em Importar.</p>
       <textarea class="modal-textarea" id="modal-json" spellcheck="false">${escapeHtml(json)}</textarea>
@@ -58,13 +58,13 @@ function renderHome(container) {
     <div class="view-header">
       <h1>Treinos</h1>
       <div class="header-actions">
-        <button class="btn-icon btn-header-icon" id="btn-io" title="Exportar / Importar">⇅</button>
+        <button class="btn-icon btn-header-icon" id="btn-io" title="Exportar / Importar">${icon('download')}</button>
         <button class="btn btn-primary" id="btn-novo-plano">+ Novo</button>
       </div>
     </div>
     ${planos.length === 0 ? `
       <div class="empty-state">
-        <p class="empty-icon">🏋️</p>
+        <div class="empty-icon">${icon('dumbbell', 48)}</div>
         <p>Nenhum plano ainda.</p>
         <p class="text-muted">Crie seu primeiro treino!</p>
       </div>
@@ -78,15 +78,15 @@ function renderHome(container) {
             <div class="plano-info">
               <div class="plano-info-top">
                 <span class="divisao-badge">${p.divisao}</span>
-                ${sessaoHoje?.concluido ? '<span class="badge-done">✓ Feito hoje</span>' : sessaoHoje ? '<span class="badge-progress">● Em andamento</span>' : ''}
+                ${sessaoHoje?.concluido ? '<span class="badge-done">Feito hoje</span>' : sessaoHoje ? '<span class="badge-progress">Em andamento</span>' : ''}
               </div>
               <h3>${escapeHtml(p.nome)}</h3>
               <p class="text-muted">${p.exercicios.length} exercício${p.exercicios.length !== 1 ? 's' : ''}</p>
             </div>
             <div class="plano-actions">
               <button class="btn btn-primary btn-iniciar" data-id="${p.id}">${btnLabel}</button>
-              <button class="btn-icon btn-editar-plano" data-id="${p.id}" title="Editar">✎</button>
-              <button class="btn-icon btn-deletar" data-id="${p.id}" title="Deletar">✕</button>
+              <button class="btn-icon btn-editar-plano" data-id="${p.id}" title="Editar">${icon('pencil')}</button>
+              <button class="btn-icon btn-deletar" data-id="${p.id}" title="Deletar">${icon('x')}</button>
             </div>
           </div>
         `;
@@ -149,7 +149,7 @@ function renderFormPlano(container, plano = null) {
 
   container.innerHTML = `
     <div class="view-header">
-      <button class="btn-back" id="btn-back">←</button>
+      <button class="btn-back" id="btn-back">${icon('arrow-left')}</button>
       <h1>${isEdit ? 'Editar plano' : 'Novo plano'}</h1>
     </div>
     <form id="form-plano" class="form-stack">
@@ -226,7 +226,7 @@ function renderExercicioInput(ex) {
     <div class="exercicio-input" data-id="${ex.id || ''}">
       <div class="ex-row">
         <input class="ex-nome" type="text" placeholder="Nome do exercício" value="${escapeHtml(ex.nome || '')}">
-        <button type="button" class="btn-icon btn-rm-ex" title="Remover">✕</button>
+        <button type="button" class="btn-icon btn-rm-ex" title="Remover">${icon('x')}</button>
       </div>
       <div class="ex-params">
         <label>Séries<input class="ex-series" type="number" min="1" max="20" value="${ex.series || 3}"></label>
@@ -258,12 +258,12 @@ function renderSessao(container, plano) {
 
   container.innerHTML = `
     <div class="view-header">
-      <button class="btn-back" id="btn-back">←</button>
+      <button class="btn-back" id="btn-back">${icon('arrow-left')}</button>
       <div style="flex:1;min-width:0">
         <h1>${escapeHtml(plano.nome)}</h1>
         <span class="divisao-badge">${plano.divisao}</span>
       </div>
-      ${sessao.concluido ? `<span class="badge-done">✓ Feito</span>` : ''}
+      ${sessao.concluido ? `<span class="badge-done">Feito</span>` : ''}
     </div>
     <div class="exercicio-sessao-list">
       ${sessao.exercicios.map(ex => `
@@ -276,7 +276,7 @@ function renderSessao(container, plano) {
       `).join('')}
     </div>
     ${!sessao.concluido ? `
-      <button class="btn btn-primary btn-full mt-lg" id="btn-concluir">Marcar como concluído 💪</button>
+      <button class="btn btn-primary btn-full mt-lg" id="btn-concluir">Marcar como concluído</button>
     ` : ''}
   `;
 
@@ -287,7 +287,7 @@ function renderSessao(container, plano) {
       sessao.concluido = true;
       DB.updateSessao(sessao);
       renderSessao(container, plano);
-      showToast('Treino concluído! 💪');
+      showToast('Treino concluído!');
     };
   }
 }

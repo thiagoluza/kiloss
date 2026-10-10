@@ -1,5 +1,5 @@
 import DB from '../db.js';
-import { showToast, today } from '../utils.js';
+import { showToast, today, toISODate, icon } from '../utils.js';
 
 export function mount(container) {
   render(container);
@@ -16,7 +16,7 @@ function render(container) {
   const historico = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    const data = d.toISOString().slice(0, 10);
+    const data = toISODate(d);
     return { data, ml: DB.getAgua(data).ml, label: `${d.getDate()}/${d.getMonth() + 1}` };
   });
 
@@ -42,9 +42,9 @@ function render(container) {
         </div>
       </div>
     </div>
-    ${ml >= meta ? `<p class="text-center text-success mt-md font-bold">Meta atingida! 🎉</p>` : `<p class="text-center text-muted mt-md">${meta - ml}ml para a meta</p>`}
+    ${ml >= meta ? `<p class="text-center text-success mt-md font-bold">Meta atingida!</p>` : `<p class="text-center text-muted mt-md">${meta - ml}ml para a meta</p>`}
     <div class="agua-buttons mt-lg">
-      ${[150, 200, 300, 500].map(v => `
+      ${[200, 500, 1000, 1800].map(v => `
         <button class="btn btn-secondary btn-agua" data-ml="${v}">+${v}ml</button>
       `).join('')}
     </div>
@@ -53,7 +53,7 @@ function render(container) {
       <div class="add-serie-inputs">
         <input id="agua-custom" type="number" min="50" step="50" placeholder="ml" inputmode="numeric">
         <button class="btn btn-primary" id="btn-agua-custom">Adicionar</button>
-        <button class="btn btn-secondary" id="btn-agua-reset" title="Zerar hoje">🔄</button>
+        <button class="btn btn-secondary btn-icon" id="btn-agua-reset" title="Zerar hoje">${icon('refresh-cw')}</button>
       </div>
     </div>
     <div class="field mt-md">

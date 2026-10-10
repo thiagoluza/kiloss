@@ -1,0 +1,10 @@
+{
+  "name": "kiloss",
+  "private": true,
+  "scripts": {
+    "build": "esbuild js/app.js --bundle --outfile=bundle.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.0"
+  }
+}
